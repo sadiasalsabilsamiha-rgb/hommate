@@ -1,7 +1,3 @@
-/* HomeMate API layer
- * localStorage দিয়ে একটা mock backend। পরে real server লাগলে শুধু এই ফাংশনগুলোর ভেতরে
- * fetch('/api/v1/...') বসালেই হবে, বাকি পেজের কোড একই থাকবে।
- */
 const Api = (() => {
   const KEY = 'homemate_db';
   const SESSION = 'homemate_session';
@@ -71,11 +67,10 @@ const Api = (() => {
   const userData = db => db.data[me()];
 
   return {
-    /* ---------- Auth ---------- */
-    register({ name, email, password }) {            // POST /auth/register
+    register({ name, email, password }) {           
       const db = load();
-      if (!name || !email || password.length < 6) return fail('নাম, ইমেইল এবং ৬+ অক্ষরের পাসওয়ার্ড দাও');
-      if (db.users.find(u => u.email === email)) return fail('এই ইমেইল আগে থেকেই আছে');
+      if (!name || !email || password.length < 6) return fail('Name, E-mail & 6 dizit password');
+      if (db.users.find(u => u.email === email)) return fail('E-mail already exists');
       const user = { id: uid(), name, email, password, phone: '', settings: { notifications: true, dark: false } };
       db.users.push(user);
       db.data[user.id] = seed();
@@ -83,44 +78,44 @@ const Api = (() => {
       localStorage.setItem(SESSION, user.id);
       return wait(user);
     },
-    login({ email, password }) {                    // POST /auth/login
+    login({ email, password }) {                  
       const u = load().users.find(x => x.email === email && x.password === password);
-      if (!u) return fail('ইমেইল বা পাসওয়ার্ড ভুল');
+      if (!u) return fail('Incorrect');
       localStorage.setItem(SESSION, u.id);
       return wait(u);
     },
     logout() { localStorage.removeItem(SESSION); },
     currentUser() { return load().users.find(u => u.id === me()) || null; },
-
-    /* ---------- Generic CRUD ---------- */
-    list(res) {                                      // GET /:res
+    
+  
+    list(res) {                              
       const db = load();
       return wait(userData(db)[res] || []);
     },
-    create(res, body) {                              // POST /:res
+    create(res, body) {                           
       const db = load();
       const item = { id: uid(), ...body };
       userData(db)[res].push(item);
       save(db);
       return wait(item);
     },
-    update(res, id, patch) {                         // PATCH /:res/:id
+    update(res, id, patch) {                    
       const db = load();
       const it = userData(db)[res].find(x => x.id === id);
-      if (!it) return fail('পাওয়া যায়নি');
+      if (!it) return fail('Not found');
       Object.assign(it, patch);
       save(db);
       return wait(it);
     },
-    remove(res, id) {                                // DELETE /:res/:id
+    remove(res, id) {                              
       const db = load();
       userData(db)[res] = userData(db)[res].filter(x => x.id !== id);
       save(db);
       return wait(true);
     },
 
-    /* ---------- Dashboard summary ---------- */
-    async dashboard() {                              // GET /dashboard
+  
+    async dashboard() {                             
       const d = userData(load());
       const today = day(0);
       const daysLeft = s => Math.round((new Date(s) - new Date(today)) / 864e5);
